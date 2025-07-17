@@ -186,10 +186,16 @@ class BlfObjectWrapper:
     _size = None
     obj = None
 
-    def __init__(self, obj_type: BL_OBJ_TYPE, size: int, blf_obj: Structure):
+    # def __init__(self, obj_type: BL_OBJ_TYPE, size: int, blf_obj: Structure):
+    #     self._type = obj_type
+    #     self._size = size
+    #     self.obj = blf_obj
+    #     if hasattr(self.obj, 'mHeader') is False:
+    #         raise ValueError("blf_obj define is incorrect")
+    def __init__(self, obj_type: BL_OBJ_TYPE):
         self._type = obj_type
-        self._size = size
-        self.obj = blf_obj
+        self._size = sizeof(Create_BL_OBJ_By_Type(self._type))
+        self.obj = Create_BL_OBJ_By_Type(self._type)
         if hasattr(self.obj, 'mHeader') is False:
             raise ValueError("blf_obj define is incorrect")
 
