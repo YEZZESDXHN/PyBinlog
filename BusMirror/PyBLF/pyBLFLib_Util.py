@@ -835,6 +835,19 @@ class VBLCANFDMessage64(Structure):
     ]
     _pack_ = 8
 
+    @property
+    def DataBytes(self):
+        """
+        获取payload数据
+
+        Returns:
+            bytes: payload数据
+        """
+        if not self.mData or self.mDLC == 0:
+            return bytes()
+
+        return bytes(self.mData[i] for i in range(self.mDLC))
+
 
 class VBLCANSettingsChanged(Structure):
     _fields_ = [
@@ -1553,6 +1566,47 @@ class VBLEthernetFrame(Structure):
         ('mPayLoad', POINTER(c_uint8)),
     ]
     _pack_ = 8
+
+    @property
+    def PayLoadBytes(self):
+        """
+        获取payload数据
+
+        Returns:
+            bytes: payload数据
+        """
+        if not self.mPayLoad or self.mPayLoadLength == 0:
+            return bytes()
+
+        return bytes(self.mPayLoad[i] for i in range(self.mPayLoadLength))
+
+    def _format_mac(self, mac_array):
+        """内部方法：将MAC地址数组转换为字符串"""
+        try:
+            if len(mac_array) != 6:
+                raise ValueError("Invalid MAC address length")
+            return ':'.join([f'{x:02x}' for x in mac_array]).lower()
+        except Exception as e:
+            print(f"Error formatting MAC address: {e}")
+            return None
+
+    @property
+    def SourceAddressStr(self):
+        """获取源MAC地址的字符串表示"""
+        try:
+            return self._format_mac(self.mSourceAddress)
+        except Exception as e:
+            print(f"Error getting source MAC: {e}")
+            return None
+
+    @property
+    def DestinationAddressStr(self):
+        """获取目标MAC地址的字符串表示"""
+        try:
+            return self._format_mac(self.mDestinationAddress)
+        except Exception as e:
+            print(f"Error getting destination MAC: {e}")
+            return None
 
 
 class VBLEthernetFrameEx(Structure):
