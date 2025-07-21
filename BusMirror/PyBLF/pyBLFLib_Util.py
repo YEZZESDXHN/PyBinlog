@@ -43,7 +43,12 @@ class BusType(c_uint32):
 
     def __str__(self):
         return self._bus_type_map[self.value]
-
+#
+# Object flag IDs
+#
+class BL_OBJ_FLAG_IDs(c_uint32):
+    BL_OBJ_FLAG_TIME_TEN_MICS = 0x00000001  # 10 micro second timestamp
+    BL_OBJ_FLAG_TIME_ONE_NANS = 0x00000002  # 1 nano second timestamp
 
 class BL_OBJ_TYPE(c_uint32):
     BL_OBJ_SIGNATURE = 0x4A424F4C

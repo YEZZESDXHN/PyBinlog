@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 from .pyBLFLib_Util import *
 
@@ -37,8 +38,8 @@ class Blf_Handler(Structure):
 
 class BlfApi:
     _lib_blf = None
-    _hdl = POINTER(Blf_Handler)
-    _hbase = VBLObjectHeaderBase()
+    # _hdl = POINTER(Blf_Handler)
+    # _hbase = VBLObjectHeaderBase()
     '''
     _BLCreateFile = WINFUNCTYPE(c_void_p, c_char_p, c_uint32)
     _BLCreateFileW = WINFUNCTYPE(c_void_p, c_wchar_p, c_uint32)
@@ -68,7 +69,8 @@ class BlfApi:
     _BLPeekTimestamp = WINFUNCTYPE(c_int, c_void_p, POINTER(VBLObjectHeaderBase), POINTER(c_uint64))
 '''
     def __init__(self):
-
+        self._hbase = VBLObjectHeaderBase()
+        self._hdl = POINTER(Blf_Handler)
         self._lib_blf = windll.LoadLibrary(dll)
         print(">> API DLL path used: " + str(self._lib_blf._name))
         self._lib_blf.BLCreateFile.argtypes = [c_char_p, c_uint32]
@@ -177,6 +179,17 @@ class BlfApi:
             raise ValueError("close handle failed")
         return True
 
+    def BLSetWriteOptions(self,compression_level=6):
+        if self._lib_blf.BLSetWriteOptions(self._hdl, compression_level, 0) == 0:
+            raise ValueError("set write options (compression level) failed")
+        return True
+
+    def BLWriteObject(self, base: VBLObjectHeaderBase):
+        return self._lib_blf.BLWriteObject(self._hdl, base) != 0
+
+    def BLSetMeasurementStartTime(self, time: SYSTEMTIME):
+        return self._lib_blf.BLSetMeasurementStartTime(self._hdl, pointer(time)) != 0
+
     def __del__(self):
         pass
 
@@ -213,6 +226,29 @@ class BlfObjectWrapper:
         if self.obj.mHeader.mBase is not None:
             api.BLFreeObject(self.obj.mHeader.mBase)
 
+class BlfWriter:
+    BlfApi = None
+    _base = VBLObjectHeaderBase()
+    # _obj_list = {}
+
+    def __init__(self):
+        self.BlfApi = BlfApi()
+
+    def open(self, blf_file: str):
+        return self.BlfApi.BLCreateFile(blf_file, DesiredAccess.GENERIC_WRITE)
+
+    def set_compression_level(self, compression_level=6):
+        self.BlfApi.BLSetWriteOptions(compression_level)
+
+    def write(self, obj):
+        return self.BlfApi.BLWriteObject(obj.mHeader.mBase)
+
+    def set_measurement_start_time(self, time: SYSTEMTIME):
+        return self.BlfApi.BLSetMeasurementStartTime(time)
+
+    def close(self):
+        return self.BlfApi.BLCloseHandle()
+
 
 class BlfReader:
     BlfApi = None
@@ -243,4 +279,4 @@ class BlfReader:
         return None
 
     def close(self):
-        pass
+        return self.BlfApi.BLCloseHandle()

@@ -6,7 +6,44 @@ from PyBLF.pyBLFLib import *
 
 
 
+###### write test ########
+# can_msg = Create_BL_OBJ_By_Type(BL_OBJ_TYPE.BL_OBJ_TYPE_CAN_MESSAGE)
+# writer = BlfWriter()
+# can_msg.mHeader.mBase.mSignature = BL_OBJ_TYPE.BL_OBJ_SIGNATURE
+# can_msg.mHeader.mBase.mHeaderSize = sizeof(can_msg.mHeader)
+# can_msg.mHeader.mBase.mHeaderVersion = 1
+# can_msg.mHeader.mBase.mObjectSize = sizeof(can_msg)
+# can_msg.mHeader.mBase.mObjectType = BL_OBJ_TYPE.BL_OBJ_TYPE_CAN_MESSAGE
+# can_msg.mHeader.mObjectFlags = BL_OBJ_FLAG_IDs.BL_OBJ_FLAG_TIME_ONE_NANS
+#
+# can_msg.mChannel = 1
+# can_msg.mFlags = 0
+# can_msg.mDLC = 8
+# can_msg.mID = 0x100
+# writer.open("write_test.blf")
+# writer.set_compression_level(6)
+#
+# now = datetime.today().timetuple()
+# st = SYSTEMTIME()
+# st.wYear = now.tm_year
+# st.wMonth = now.tm_mon
+# st.wDay = now.tm_mday
+# st.wDayOfWeek = now.tm_wday
+# st.wHour = now.tm_hour-1
+# st.wMinute = now.tm_min
+# st.wSecond = now.tm_sec
+# writer.set_measurement_start_time(st)
+#
+# for x in range(10):
+#     can_msg.mHeader.mObjectTimeStamp = x * 10000000
+#     for i in range(8):
+#         can_msg.mData[i] = i + x
+#     writer.write(can_msg)
+#
+# writer.close()
 
+
+########## read test ###########
 class CanMessage(BlfObjectWrapper):
     obj: None
 
