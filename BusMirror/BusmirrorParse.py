@@ -1,3 +1,6 @@
+from typing import Union, List
+
+
 class BusMirrorData:
     def __init__(self):
         self.Timestamp = 0
@@ -8,6 +11,7 @@ class BusMirrorData:
         self.Netw_ID = 0
         self.Netw_State = 0
         self.FrameID = 0
+        self.IsFD = 0
         self.Pay_Length = 0
         self.data = bytes()
 
@@ -19,11 +23,11 @@ class BusMirror:
         self.SequenceNumber = 0
         self.HeaderTimestamp = 0
         self.DataLength = 0
-        self.bus_data = []  # 假设最大100个数据
+        self.bus_data: List[BusMirrorData] = []
         self.bus_data_num = 0
 
 
-def unpack_bus_mirror(input_payload, input_payload_length, offset=12):
+def unpack_bus_mirror(input_payload, input_payload_length, offset=12) -> BusMirror:
     """
     解包总线镜像数据
 
@@ -88,10 +92,18 @@ def unpack_bus_mirror(input_payload, input_payload_length, offset=12):
 
         if bus_mirror.bus_data[busmirror_message_num].NetworkStateAvailable == 0:
             # 解析有效数据
+            # if bus_mirror.bus_data[busmirror_message_num].NetworkType == 1:  # CAN
+            #     if input_payload[unpacked_byte] == 0:
+            #         bus_mirror.bus_data[busmirror_message_num].IsFD = False
+            #     elif input_payload[unpacked_byte] == 0x40:
+            #         bus_mirror.bus_data[busmirror_message_num].IsFD = True
+            bus_mirror.bus_data[busmirror_message_num].IsFD = input_payload[unpacked_byte]
+
+            unpacked_byte += 1
             bus_mirror.bus_data[busmirror_message_num].FrameID = (
-                int.from_bytes(input_payload[unpacked_byte:unpacked_byte + 3], byteorder='big')
+                int.from_bytes(input_payload[unpacked_byte:unpacked_byte + 2], byteorder='big')
             )
-            unpacked_byte += 3
+            unpacked_byte += 2
 
             bus_mirror.bus_data[busmirror_message_num].Pay_Length = input_payload[unpacked_byte]
             unpacked_byte += 1
