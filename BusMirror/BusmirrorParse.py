@@ -27,7 +27,7 @@ class BusMirror:
         self.bus_data_num = 0
 
 
-def unpack_bus_mirror(input_payload, input_payload_length, offset=12) -> BusMirror:
+def unpack_bus_mirror(input_payload: bytes, input_payload_length, offset=12) -> BusMirror:
     """
     解包总线镜像数据
 

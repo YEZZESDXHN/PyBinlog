@@ -1,6 +1,70 @@
 from collections import defaultdict
 import time
-from scapy.layers.inet import IP, UDP, defragment
+from enum import Enum
+from typing import Optional
+
+from scapy.layers.inet import IP, UDP, Ether, TCP, defragment
+from scapy.layers.l2 import Dot1Q
+
+
+class UDPPacket:
+    def __init__(self):
+        self.sPort = None
+        self.dPort = None
+        self.length = 0
+        self.checksum = None
+        self.payload = bytes()
+
+class TCPPacket:
+    def __init__(self):
+        self.sPort = None
+        self.dPort = None
+        self.length = 0
+        self.payload = bytes()
+
+
+class IPPacket:
+    def __init__(self):
+        self.PacketType = 'Eth' # UDP,TCP,当前只识别这两种
+        self.timestamp = 0
+        self.sMAC = None
+        self.dMAC = None
+        self.vlan0ID = None
+        self.vlan0CFI = None
+        self.vlan0Priority = None
+        self.vlan1ID = None
+        self.vlan1CFI = None
+        self.vlan1Priority = None
+        self.eth_type = None # ipv4,ipv6,icmpv4...
+        self.sIP: Optional[str] = None
+        self.dIP: Optional[str] = None
+
+        self.udp: Optional[UDPPacket] = None
+        self.tcp: Optional[TCPPacket] = None
+    def init(self):
+        self.PacketType = 'Eth'  # UDP,TCP,当前只识别这两种
+        self.timestamp = 0
+        self.sMAC = None
+        self.dMAC = None
+        self.vlan0ID = None
+        self.vlan0CFI = None
+        self.vlan0Priority = None
+        self.vlan1ID = None
+        self.vlan1CFI = None
+        self.vlan1Priority = None
+        self.eth_type = None  # ipv4,ipv6,icmpv4...
+        self.sIP = None
+        self.dIP = None
+
+        self.udp = None
+        self.tcp = None
+
+
+
+
+class PayloadType(Enum):
+    ETHERNET = 'eth'
+    IP = 'ip'
 
 class IPFramProcessor:
     def __init__(self, timeout=1.0, cleanup_interval=5.0):
@@ -11,30 +75,71 @@ class IPFramProcessor:
         self.cleanup_interval = cleanup_interval
         self.last_cleanup = time.time()
 
-    def process_frame(self, timestamp, payload_bytes):
+
+    def process_frame(self, timestamp, payload_bytes, payload_type: PayloadType, sMAC = None, dMAC = None, vlanID = None, vlanpcp = None):
         try:
             # 清理过期数据
             self._cleanup_old_fragments()
+            # 验证payload_type参数
+            if not isinstance(payload_type, PayloadType):
+                raise TypeError("payload_type参数必须是PayloadType枚举值")
 
-            # 解析IP包
-            ip_packet = IP(payload_bytes)
-            packet_id = ip_packet.id
+            if payload_type == PayloadType.IP: # 输入为ip包
+                # 解析IP包
+                eth_IP_packet = IP(payload_bytes)
+                packet_id = eth_IP_packet.id
 
-            # 更新时间戳
-            self.last_timestamp[packet_id] = float(timestamp)
+                # 更新时间戳
+                self.last_timestamp[packet_id] = float(timestamp)
 
-            # 检查是否是第一个分片
-            if ip_packet.frag == 0:
-                # 记录总长度信息（如果在flags中标记了MF-More Fragments）
-                self.fragment_info[packet_id]['total_length'] = ip_packet.len
-                self.fragment_info[packet_id]['is_complete'] = not (ip_packet.flags & 1)
+                # 检查是否是第一个分片
+                if eth_IP_packet.frag == 0:
+                    # 记录总长度信息（如果在flags中标记了MF-More Fragments）
+                    self.fragment_info[packet_id]['sMAC'] = sMAC
+                    self.fragment_info[packet_id]['dMAC'] = dMAC
+                    self.fragment_info[packet_id]['vlanID'] = vlanID
+                    self.fragment_info[packet_id]['vlanpcp'] = vlanpcp
+                    self.fragment_info[packet_id]['total_length'] = eth_IP_packet.len
+                    self.fragment_info[packet_id]['is_complete'] = not (eth_IP_packet.flags & 1)
 
-            # 添加分片到组
-            self.frame_groups[packet_id].append(ip_packet)
+                # 添加分片到组
+                self.frame_groups[packet_id].append(eth_IP_packet)
 
-            # 检查是否可以重组
-            if self._can_reassemble(packet_id):
-                return self._reassemble_and_process(packet_id)
+                # 检查是否可以重组
+                if self._can_reassemble(packet_id):
+                    return self._reassemble_and_process(packet_id)
+            elif payload_type == PayloadType.ETHERNET:  # 输入为eth包
+                eth_packet = Ether(payload_bytes)
+                if IP not in eth_packet:
+                    return
+
+                eth_IP_packet = eth_packet[IP]
+                packet_id = eth_IP_packet.id
+
+                # 更新时间戳
+                self.last_timestamp[packet_id] = float(timestamp)
+
+                # 检查是否是第一个分片
+                if eth_IP_packet.frag == 0:
+                    # 记录总长度信息（如果在flags中标记了MF-More Fragments）
+                    self.fragment_info[packet_id]['sMAC'] = eth_packet.src
+                    self.fragment_info[packet_id]['dMAC'] = eth_packet.dst
+                    if eth_packet.type == 0x8100 and Dot1Q in eth_packet: # 带vlan
+                        self.fragment_info[packet_id]['vlanID'] = eth_packet[Dot1Q].vlan
+                        self.fragment_info[packet_id]['vlanpcp'] = eth_packet[Dot1Q].prio
+                    else:
+                        self.fragment_info[packet_id]['vlanID'] = vlanID
+                        self.fragment_info[packet_id]['vlanpcp'] = vlanpcp
+                    self.fragment_info[packet_id]['total_length'] = eth_IP_packet.len
+                    self.fragment_info[packet_id]['is_complete'] = not (eth_IP_packet.flags & 1)
+
+                # 添加分片到组
+                self.frame_groups[packet_id].append(eth_IP_packet)
+
+                # 检查是否可以重组
+                if self._can_reassemble(packet_id):
+                    return self._reassemble_and_process(packet_id)
+
 
         except Exception as e:
             print(f"处理帧时出错: {e}")
@@ -76,9 +181,8 @@ class IPFramProcessor:
         try:
             fragments = self.frame_groups[packet_id]
             reassembled = defragment(fragments)
-
             # 处理重组后的包
-            result = self._process_reassembled_packet(reassembled)
+            result = self._process_reassembled_packet(reassembled, packet_id)
 
             # 清理已处理的数据
             self._cleanup_packet_data(packet_id)
@@ -90,34 +194,38 @@ class IPFramProcessor:
             self._cleanup_packet_data(packet_id)
             return None
 
-    def _process_reassembled_packet(self, reassembled):
+    def _process_reassembled_packet(self, reassembled , packet_id) -> list[IPPacket]:
         """处理重组后的包，识别协议类型并相应处理"""
         results = []
         for packet in reassembled:
-            packet_info = {
-                'protocol': 'unknown',
-                'src_ip': packet[IP].src,
-                'dst_ip': packet[IP].dst,
-                'length': len(packet),
-                'data': {}
-            }
+            ip_packet = IPPacket()
+            ip_packet.timestamp = self.last_timestamp[packet_id]
+            ip_packet.sIP = packet[IP].src
+            ip_packet.dIP = packet[IP].dst
+            ip_packet.sMAC = self.fragment_info[packet_id]['sMAC']
+            ip_packet.dMAC = self.fragment_info[packet_id]['dMAC']
+            ip_packet.vlan0ID = self.fragment_info[packet_id]['vlanID']
+            ip_packet.vlan0Priority = self.fragment_info[packet_id]['vlanpcp']
+            ip_packet.vlan0CFI = 0
 
             # UDP包处理
             if UDP in packet:
-                packet_info['protocol'] = 'UDP'
-                packet_info['data'] = {
-                    'sport': packet[UDP].sport,
-                    'dport': packet[UDP].dport,
-                    'length': len(packet[UDP]),
-                    'payload': bytes(packet[UDP].payload)
-                }
+                ip_packet.PacketType = 'UDP'
+                ip_packet.udp = UDPPacket()
+                ip_packet.udp.sPort = packet[UDP].sport
+                ip_packet.udp.dPort = packet[UDP].dport
+                ip_packet.udp.length = len(packet[UDP].payload)
+                ip_packet.udp.payload = bytes(packet[UDP].payload)
 
-            # 可以添加其他协议的处理（如TCP、ICMP等）
-            # elif TCP in packet:
-            #     packet_info['protocol'] = 'TCP'
-            #     # TCP特定处理...
+            elif TCP in packet:
+                ip_packet.PacketType = 'TCP'
+                ip_packet.tcp = TCPPacket()
+                ip_packet.tcp.sPort = packet[TCP].sport
+                ip_packet.tcp.dPort = packet[TCP].dport
+                ip_packet.tcp.length = len(packet[TCP].payload)
+                ip_packet.tcp.payload = bytes(packet[TCP].payload)
 
-            results.append(packet_info)
+            results.append(ip_packet)
 
         return results
 

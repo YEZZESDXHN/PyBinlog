@@ -381,11 +381,11 @@ class SYSTEMTIME(Structure):
 
 class VBLObjectHeaderBase(Structure):
     _fields_ = [
-        ("mSignature", c_uint32),
-        ("mHeaderSize", c_uint16),
-        ("mHeaderVersion", c_uint16),
-        ("mObjectSize", c_uint32),
-        ("mObjectType", BL_OBJ_TYPE),
+        ("mSignature", c_uint32),       # signature (BL_OBJ_SIGNATURE)
+        ("mHeaderSize", c_uint16),      # sizeof object header
+        ("mHeaderVersion", c_uint16),   # header version
+        ("mObjectSize", c_uint32),      # object size
+        ("mObjectType", BL_OBJ_TYPE),   # object type (BL_OBJ_TYPE_XXX)
     ]
     _pack_ = 8
 
@@ -412,15 +412,15 @@ class VBLObjectHeaderBase(Structure):
 
 class VBLFileStatistics(Structure):
     _fields_ = [
-        ("mStatisticsSize", c_uint32),
-        ("mApplicationID", c_uint8),
-        ("mApplicationMajor", c_uint8),
-        ("mApplicationMinor", c_uint8),
-        ("mApplicationBuild", c_uint8),
-        ("mFileSize", c_uint64),
-        ("mUncompressedFileSize", c_uint64),
-        ("mObjectCount", c_uint32),
-        ("mObjectsRead", c_uint32),
+        ("mStatisticsSize", c_uint32),  # sizeof (VBLFileStatistics)
+        ("mApplicationID", c_uint8),  # application ID
+        ("mApplicationMajor", c_uint8),  # application major number
+        ("mApplicationMinor", c_uint8),  # application minor number
+        ("mApplicationBuild", c_uint8),  # application build number
+        ("mFileSize", c_uint64),  # file size in bytes
+        ("mUncompressedFileSize", c_uint64),  # uncompressed file size in bytes
+        ("mObjectCount", c_uint32),  # number of objects
+        ("mObjectsRead", c_uint32),  # number of objects read
     ]
     _pack_ = 8
 
@@ -464,18 +464,18 @@ class VBLFileStatistics(Structure):
 # Base object header type definition
 class VBLFileStatisticsEx(Structure):
     _fields_ = [
-        ("mStatisticsSize", c_uint32),
-        ("mApplicationID", c_uint8),
-        ("mApplicationMajor", c_uint8),
-        ("mApplicationMinor", c_uint8),
-        ("mApplicationBuild", c_uint8),
-        ("mFileSize", c_uint64),
-        ("mUncompressedFileSize", c_uint64),
-        ("mObjectCount", c_uint32),
-        ("mObjectsRead", c_uint32),
-        ("mMeasurementStartTime", SYSTEMTIME),
-        ("mLastObjectTime", SYSTEMTIME),
-        ("mReserved", c_uint32 * 18),
+        ("mStatisticsSize", c_uint32),          # sizeof (VBLFileStatisticsEx)
+        ("mApplicationID", c_uint8),            # application ID
+        ("mApplicationMajor", c_uint8),         # application major number
+        ("mApplicationMinor", c_uint8),         # application minor number
+        ("mApplicationBuild", c_uint8),         # application build number
+        ("mFileSize", c_uint64),                # file size in bytes
+        ("mUncompressedFileSize", c_uint64),    # uncompressed file size in bytes
+        ("mObjectCount", c_uint32),             # number of objects
+        ("mObjectsRead", c_uint32),             # number of objects read
+        ("mMeasurementStartTime", SYSTEMTIME),  # measurement start time
+        ("mLastObjectTime", SYSTEMTIME),        # last object time
+        ("mReserved", c_uint32 * 18),           # reserved
     ]
     _pack_ = 8
 
@@ -531,11 +531,11 @@ class VBLFileStatisticsEx(Structure):
 # Extended base object header type definition with dynamic extendible objects
 class VBLVarObjectHeader(Structure):
     _fields_ = [
-        ("mBase", VBLObjectHeaderBase),
-        ("mObjectFlags", c_uint32),
-        ("mObjectStaticSize", c_uint16),
-        ("mObjectVersion", c_uint16),
-        ("mObjectTimeStamp", c_uint64),
+        ("mBase", VBLObjectHeaderBase),     # base header object
+        ("mObjectFlags", c_uint32),         # object flags
+        ("mObjectStaticSize", c_uint16),    # size of the static part of the object
+        ("mObjectVersion", c_uint16),       # object specific version
+        ("mObjectTimeStamp", c_uint64),     # object timestamp
     ]
     _pack_ = 8
 
@@ -594,13 +594,13 @@ class VBLObjectHeader(Structure):
 
 class VBLObjectHeader2(Structure):
     _fields_ = [
-        ("mBase", VBLObjectHeaderBase),
-        ("mObjectFlags", c_uint32),
-        ("mTimeStampStatus", c_uint8),
-        ("mReserved1", c_uint8),
-        ("mObjectVersion", c_uint16),
-        ("mObjectTimeStamp", c_uint64),
-        ("mOriginalTimeStamp", c_uint64),
+        ("mBase", VBLObjectHeaderBase),     # base header object
+        ("mObjectFlags", c_uint32),         # object flags
+        ("mTimeStampStatus", c_uint8),      # time stamp status
+        ("mReserved1", c_uint8),            # reserved
+        ("mObjectVersion", c_uint16),       # object specific version
+        ("mObjectTimeStamp", c_uint64),     # object timestamp
+        ("mOriginalTimeStamp", c_uint64),   # original object timestamp
     ]
     _pack_ = 8
 
@@ -644,12 +644,12 @@ class VBLObjectHeader(Structure):
 
 class VBLCANMessage(Structure):
     _fields_ = [
-        ('mHeader', VBLObjectHeader),
-        ('mChannel', c_uint16),
-        ('mFlags', c_uint8),
-        ('mDLC', c_uint8),
-        ('mID', c_uint32),
-        ('mData', c_ubyte * 8),
+        ('mHeader', VBLObjectHeader),   # object header
+        ('mChannel', c_uint16),         # application channel
+        ('mFlags', c_uint8),            # CAN dir & rtr
+        ('mDLC', c_uint8),              # CAN dlc
+        ('mID', c_uint32),              # CAN ID
+        ('mData', c_ubyte * 8),         # CAN data
     ]
     _pack_ = 8
 
@@ -1573,6 +1573,10 @@ class VBLEthernetFrame(Structure):
     _pack_ = 8
 
     @property
+    def PayLoadLength(self):
+        return self.mPayLoadLength
+
+    @property
     def PayLoadBytes(self):
         """
         获取payload数据
@@ -1630,6 +1634,23 @@ class VBLEthernetFrameEx(Structure):
         ('mFrameData', POINTER(c_uint8)),  # 使用 POINTER 来表示指向数据的指针
     ]
     _pack_ = 8
+
+    @property
+    def PayLoadLength(self):
+        return self.mFrameLength
+
+    @property
+    def PayLoadBytes(self):
+        """
+        获取payload数据
+
+        Returns:
+            bytes: payload数据
+        """
+        if not self.mFrameData or self.mFrameLength == 0:
+            return bytes()
+
+        return bytes(self.mFrameData[i] for i in range(self.mFrameLength))
 
 class  VBLEthernetFrameForwarded(Structure):
     _fields_=[
