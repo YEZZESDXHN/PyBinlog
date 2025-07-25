@@ -1600,7 +1600,7 @@ class VBLEthernetFrame(Structure):
             return None
 
     @property
-    def SourceAddressStr(self):
+    def sMACStr(self):
         """获取源MAC地址的字符串表示"""
         try:
             return self._format_mac(self.mSourceAddress)
@@ -1609,7 +1609,7 @@ class VBLEthernetFrame(Structure):
             return None
 
     @property
-    def DestinationAddressStr(self):
+    def dMACStr(self):
         """获取目标MAC地址的字符串表示"""
         try:
             return self._format_mac(self.mDestinationAddress)
