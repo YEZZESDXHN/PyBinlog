@@ -90,7 +90,7 @@ class IPFramProcessor:
                 packet_id = eth_IP_packet.id
 
                 # 更新时间戳
-                self.last_timestamp[packet_id] = float(timestamp)
+                self.last_timestamp[packet_id] = timestamp
 
                 # 检查是否是第一个分片
                 if eth_IP_packet.frag == 0:

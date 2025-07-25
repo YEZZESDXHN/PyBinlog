@@ -110,7 +110,7 @@ class ethMessage_ex(BlfObjectWrapper):
 eth_msg = ethMessage()
 eth_msg_ex = ethMessage_ex()
 reader = BlfReader()
-if reader.open("ML_R410RD7_143_100_TC_0x20010003_to_ivi_autoEasyEntrySet_20250714194334_org.blf") is False:
+if reader.open("ML_R500RD13_167__Check_SomeIP_Message_0x60078001_to_OIB_8155_QNX_NotificationEve_20250711192726_org.blf") is False:
     print("Open Error!")
 # reader.enroll(can_msg1)
 reader.enroll(eth_msg)
@@ -131,7 +131,7 @@ can_msg.mHeader.mObjectFlags = BL_OBJ_FLAG_IDs.BL_OBJ_FLAG_TIME_ONE_NANS
 can_msg.mFlags = 3289152
 # can_msg.mDLC = 8
 # can_msg.mID = 0x100
-writer.open("ML_R410RD7_143_100_TC_0x20010003_to_ivi_autoEasyEntrySet_20250714194334_org_parse_busmirror.blf")
+writer.open("ML_R500RD13_167__Check_SomeIP_Message_0x60078001_to_OIB_8155_QNX_NotificationEve_20250711192726_org_parse_busmirror.blf")
 writer.set_compression_level(6)
 first_flag=0
 start_Timestamp=0
@@ -158,19 +158,25 @@ while (obj := reader.read_data()) is not None:
             if packet.sMAC == "02:df:53:00:00:20" and packet.dMAC == "02:df:53:00:00:03" and packet.PacketType == "UDP" and packet.udp.sPort == 58030:
                 busmirror_info = BusmirrorParse.unpack_bus_mirror(packet.udp.payload,packet.udp.length)
                 if first_flag == 0:
-                    start_Timestamp=busmirror_info.HeaderTimestamp
-                    # now = datetime.today().timetuple()
-                    # st = SYSTEMTIME()
-                    # writer.set_measurement_start_time(st)
-                    first_flag=1
+                    start_Timestamp = busmirror_info.Unix_ns
+                    st = SYSTEMTIME()
+                    # 将时间戳转换为datetime对象
+                    dt = datetime.fromtimestamp(busmirror_info.Unix_s)
+                    # 将datetime对象转换为struct_time
+                    time_tuple = dt.timetuple()
+                    st.wYear = time_tuple.tm_year
+                    st.wMonth = time_tuple.tm_mon
+                    st.wDay = time_tuple.tm_mday
+                    st.wDayOfWeek = time_tuple.tm_wday
+                    st.wHour = time_tuple.tm_hour
+                    st.wMinute = time_tuple.tm_min
+                    st.wSecond = time_tuple.tm_sec
+
+                    writer.set_measurement_start_time(st)
+                    first_flag = 1
                 if busmirror_info is not None:
                     for msg in busmirror_info.bus_data:
-                        #
-                        # mObjectTimeStamp                  1ms = 1 * 1000000
-                        # busmirror_info.HeaderTimestamp    1ms = 1 * 1000000
-                        # msg.Timestamp                     1ms = 1 * 100
-                        #
-                        can_msg.mHeader.mObjectTimeStamp = (busmirror_info.HeaderTimestamp - start_Timestamp ) + msg.Timestamp*10000
+                        can_msg.mHeader.mObjectTimeStamp = (busmirror_info.Unix_ns - start_Timestamp) + msg.Timestamp*10000
                         can_msg.mChannel = msg.Netw_ID
                         can_msg.mDLC = msg.Pay_Length
                         can_msg.mID = msg.FrameID

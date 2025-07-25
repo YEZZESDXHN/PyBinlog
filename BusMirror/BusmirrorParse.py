@@ -17,11 +17,16 @@ class BusMirrorData:
 
 
 class BusMirror:
+    # mObjectTimeStamp(blf 时间戳)           1ms = 1 * 1000000                       ->单位ns
+    # busmirror_info.HeaderTimestamp_raw    前六字节为Unix秒时间戳,后四位为纳秒时间    ->单位ns
+    # msg.Timestamp                         1ms = 1 * 100                           ->单位10000ns
     def __init__(self, max_size=500):
         self.max_size = max_size
         self.ProtocolVersion = 0
         self.SequenceNumber = 0
-        self.HeaderTimestamp = 0
+        self.HeaderTimestamp_raw = 0
+        self.Unix_ns = 0
+        self.Unix_s = 0
         self.DataLength = 0
         self.bus_data: List[BusMirrorData] = []
         self.bus_data_num = 0
@@ -48,7 +53,9 @@ def unpack_bus_mirror(input_payload: bytes, input_payload_length, offset=12) -> 
 
     bus_mirror.ProtocolVersion = input_payload[0]
     bus_mirror.SequenceNumber = input_payload[1]
-    bus_mirror.HeaderTimestamp = int.from_bytes(input_payload[2:12], byteorder='big')
+    bus_mirror.HeaderTimestamp_raw = int.from_bytes(input_payload[2:12], byteorder='big')
+    bus_mirror.Unix_s = int.from_bytes(input_payload[2:8], byteorder='big')
+    bus_mirror.Unix_ns = int.from_bytes(input_payload[2:8], byteorder='big') * 1000000000 + int.from_bytes(input_payload[8:12], byteorder='big')
 
 
     # 获取数据长度
