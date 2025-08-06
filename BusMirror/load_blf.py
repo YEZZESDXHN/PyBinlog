@@ -1,46 +1,11 @@
+import time
 
 import BusmirrorParse
 from EthFramParse import IPFramProcessor, PayloadType
 from PyBLF.pyBLFLib import *
 # from scapy import IP, UDP, defragment
-
-
-
-###### write test ########
-# can_msg = Create_BL_OBJ_By_Type(BL_OBJ_TYPE.BL_OBJ_TYPE_CAN_MESSAGE)
-# writer = BlfWriter()
-# can_msg.mHeader.mBase.mSignature = BL_OBJ_TYPE.BL_OBJ_SIGNATURE
-# can_msg.mHeader.mBase.mHeaderSize = sizeof(can_msg.mHeader)
-# can_msg.mHeader.mBase.mHeaderVersion = 1
-# can_msg.mHeader.mBase.mObjectSize = sizeof(can_msg)
-# can_msg.mHeader.mBase.mObjectType = BL_OBJ_TYPE.BL_OBJ_TYPE_CAN_MESSAGE
-# can_msg.mHeader.mObjectFlags = BL_OBJ_FLAG_IDs.BL_OBJ_FLAG_TIME_ONE_NANS
-#
-# can_msg.mChannel = 1
-# can_msg.mFlags = 0
-# can_msg.mDLC = 8
-# can_msg.mID = 0x100
-# writer.open("write_test.blf")
-# writer.set_compression_level(6)
-#
-# now = datetime.today().timetuple()
-# st = SYSTEMTIME()
-# st.wYear = now.tm_year
-# st.wMonth = now.tm_mon
-# st.wDay = now.tm_mday
-# st.wDayOfWeek = now.tm_wday
-# st.wHour = now.tm_hour-1
-# st.wMinute = now.tm_min
-# st.wSecond = now.tm_sec
-# writer.set_measurement_start_time(st)
-#
-# for x in range(10):
-#     can_msg.mHeader.mObjectTimeStamp = x * 10000000
-#     for i in range(8):
-#         can_msg.mData[i] = i + x
-#     writer.write(can_msg)
-#
-# writer.close()
+soure_file_path = "busmirror.blf"
+output_file_path = "busmirror_parse.blf"
 
 
 ########## read test ###########
@@ -106,11 +71,13 @@ class ethMessage_ex(BlfObjectWrapper):
     def filter(self):
         return True
 
+
+start_time = time.perf_counter()
 # can_msg1 = CanMessage()
 eth_msg = ethMessage()
 eth_msg_ex = ethMessage_ex()
 reader = BlfReader()
-if reader.open("ML_R500RD13_167__Check_SomeIP_Message_0x60078001_to_OIB_8155_QNX_NotificationEve_20250711192726_org.blf") is False:
+if reader.open(soure_file_path) is False:
     print("Open Error!")
 # reader.enroll(can_msg1)
 reader.enroll(eth_msg)
@@ -131,7 +98,7 @@ can_msg.mHeader.mObjectFlags = BL_OBJ_FLAG_IDs.BL_OBJ_FLAG_TIME_ONE_NANS
 can_msg.mFlags = 3289152
 # can_msg.mDLC = 8
 # can_msg.mID = 0x100
-writer.open("ML_R500RD13_167__Check_SomeIP_Message_0x60078001_to_OIB_8155_QNX_NotificationEve_20250711192726_org_parse_busmirror.blf")
+writer.open(output_file_path)
 writer.set_compression_level(6)
 first_flag=0
 start_Timestamp=0
@@ -220,3 +187,12 @@ while (obj := reader.read_data()) is not None:
         #                     writer.write(can_msg)
 reader.close()
 writer.close()
+end_time = time.perf_counter()
+run_time2 = end_time-start_time
+
+print(f"start_time:{start_time},end_time:{end_time},程序运行时间为：{run_time2:.4f} 秒")
+
+print("程序运行完毕，按 Enter 键退出。")
+
+# 等待用户输入
+input()

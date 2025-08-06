@@ -65,8 +65,10 @@ def unpack_bus_mirror(input_payload: bytes, input_payload_length, offset=12) -> 
     if input_payload_length - offset - bus_mirror.DataLength == 2:
         pass
     elif input_payload_length - offset - bus_mirror.DataLength > 2:
+        print("长度过长")
         return None  # 长度过长
     else:
+        print("数据不完整")
         return None  # 数据不完整
 
     busmirror_message_num = 0
@@ -129,6 +131,7 @@ def unpack_bus_mirror(input_payload: bytes, input_payload_length, offset=12) -> 
                 bus_mirror.bus_data_num = busmirror_message_num
                 return bus_mirror
             elif unpacked_byte > bus_mirror.DataLength + offset + 2:
+                print("数据溢出1")
                 return None
 
         else:  # 无效数据
@@ -139,6 +142,7 @@ def unpack_bus_mirror(input_payload: bytes, input_payload_length, offset=12) -> 
                 bus_mirror.bus_data_num = busmirror_message_num
                 return bus_mirror
             elif unpacked_byte > bus_mirror.DataLength + offset + 2:
+                print("数据溢出2")
                 return None
 
         if unpacked_byte >= input_payload_length:
