@@ -80,7 +80,7 @@ jobs:
           python -m nuitka --assume-yes-for-downloads 
           --standalone --show-progress --show-memory --remove-output --follow-imports --lto=yes 
           --output-dir="${{ github.workspace }}/dist" 
-          load_blf.py
+          BusMirror/load_blf.py
 
       # Uploads artifact
       - name: Upload Artifact
